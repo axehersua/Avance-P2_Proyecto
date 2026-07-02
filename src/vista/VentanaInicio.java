@@ -1,7 +1,9 @@
 package vista;
 
+import excepciones.ValidacionException;
 import modelo.Estudiante;
 import negocio.GestorUsuarios;
+import util.Validador;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,6 +13,14 @@ import java.awt.event.ActionEvent;
  * RF08 - Ventana de inicio (login / registro).
  * Reemplaza a interfaz.MenuInicio pero llamando exactamente a los mismos
  * metodos de negocio.GestorUsuarios (iniciarSesion, registrar).
+ *
+ * IMPORTANTE: recibe el GestorUsuarios como parametro en vez de crear uno
+ * nuevo (new GestorUsuarios()) en el constructor. Antes, cada vez que se
+ * cerraba sesion se creaba una instancia vacia y se perdian todos los
+ * usuarios registrados durante esa ejecucion. Ahora se reutiliza la MISMA
+ * instancia durante toda la vida del programa (creada una sola vez en
+ * MainGUI), y solo se pierde al cerrar completamente la aplicacion.
+ *
  * No se modifica ninguna clase de modelo ni de negocio.
  */
 public class VentanaInicio extends JFrame {
@@ -20,17 +30,15 @@ public class VentanaInicio extends JFrame {
     private CardLayout cardLayout;
     private JPanel panelContenedor;
 
-    // Campos del panel de login
     private JTextField campoUsuarioLogin;
     private JPasswordField campoContrasenaLogin;
 
-    // Campos del panel de registro
     private JTextField campoUsuarioRegistro;
     private JTextField campoCorreoRegistro;
     private JPasswordField campoContrasenaRegistro;
 
-    public VentanaInicio() {
-        this.gestorUsuarios = new GestorUsuarios();
+    public VentanaInicio(GestorUsuarios gestorUsuarios) {
+        this.gestorUsuarios = gestorUsuarios;
         configurarVentana();
         construirInterfaz();
     }
@@ -135,13 +143,17 @@ public class VentanaInicio extends JFrame {
     }
 
     // Llama a GestorUsuarios.iniciarSesion() exactamente igual que lo hacia
-    // interfaz.MenuInicio.login(), solo que la entrada viene de JTextField.
+    // interfaz.MenuInicio.login(). Usa try/catch con ValidacionException
+    // (checked) para validar antes de llamar a negocio.
     private void onIniciarSesion(ActionEvent evento) {
         String usuario = campoUsuarioLogin.getText().trim();
         String contrasena = new String(campoContrasenaLogin.getPassword());
 
-        if (usuario.isEmpty() || contrasena.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa usuario y contrasena.",
+        try {
+            Validador.validarTextoNoVacio(usuario, "Usuario");
+            Validador.validarTextoNoVacio(contrasena, "Contrasena");
+        } catch (ValidacionException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
                     "Datos incompletos", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -150,7 +162,7 @@ public class VentanaInicio extends JFrame {
 
         if (estudiante != null) {
             dispose();
-            new VentanaPrincipal(estudiante).setVisible(true);
+            new VentanaPrincipal(estudiante, gestorUsuarios).setVisible(true);
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contrasena incorrectos.",
                     "Error de inicio de sesion", JOptionPane.ERROR_MESSAGE);
@@ -158,15 +170,20 @@ public class VentanaInicio extends JFrame {
     }
 
     // Llama a GestorUsuarios.registrar() exactamente igual que lo hacia
-    // interfaz.MenuInicio.registrarUsuario().
+    // interfaz.MenuInicio.registrarUsuario(). Usa try/catch con
+    // ValidacionException para validar formato de correo antes de registrar.
     private void onRegistrar(ActionEvent evento) {
         String usuario = campoUsuarioRegistro.getText().trim();
         String correo = campoCorreoRegistro.getText().trim();
         String contrasena = new String(campoContrasenaRegistro.getPassword());
 
-        if (usuario.isEmpty() || correo.isEmpty() || contrasena.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa todos los campos.",
-                    "Datos incompletos", JOptionPane.WARNING_MESSAGE);
+        try {
+            Validador.validarTextoNoVacio(usuario, "Usuario");
+            Validador.validarEmail(correo);
+            Validador.validarTextoNoVacio(contrasena, "Contrasena");
+        } catch (ValidacionException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
             return;
         }
 

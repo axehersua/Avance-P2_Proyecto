@@ -9,14 +9,13 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * RF05 - Ventana de agenda.
- * Reemplaza interfaz.VistaAgenda (mostrarAgendaDiaria, verAgendaPorFecha,
- * verHistoricoAgendas) con tres pestanas. Llama exactamente a los mismos
- * metodos de negocio.GestorAgenda que ya existen; usa CapturadorConsola
- * para mostrar en pantalla lo que esos metodos imprimen por consola.
- * No se modifica ninguna clase de modelo ni de negocio.
+ * RF05 - Panel de agenda (version dashboard de VentanaAgenda), con tres
+ * pestanas. Llama exactamente a los mismos metodos de negocio.GestorAgenda
+ * que ya existen; usa CapturadorConsola para mostrar lo que esos metodos
+ * imprimen por consola. No se modifica ninguna clase de modelo ni de
+ * negocio.
  */
-public class VentanaAgenda extends JFrame {
+public class PanelAgenda extends JPanel implements Refrescable {
 
     private Estudiante estudiante;
     private GestorAgenda gestorAgenda;
@@ -29,92 +28,108 @@ public class VentanaAgenda extends JFrame {
     private JTextField campoFechaInicio;
     private JTextField campoFechaFin;
 
-    public VentanaAgenda(Estudiante estudiante) {
+    public PanelAgenda(Estudiante estudiante) {
         this.estudiante = estudiante;
         this.gestorAgenda = new GestorAgenda();
-        configurarVentana();
+        setLayout(new BorderLayout(0, 16));
+        setBackground(EstiloUI.COLOR_FONDO);
+        setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         construirInterfaz();
     }
 
-    private void configurarVentana() {
-        setTitle("Smart Planner - Agenda");
-        setSize(600, 500);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-    }
-
     private void construirInterfaz() {
+        add(EstiloUI.crearTitulo("Agenda"), BorderLayout.NORTH);
+
         JTabbedPane pestanas = new JTabbedPane();
+        pestanas.setFont(EstiloUI.FUENTE_NORMAL);
         pestanas.addTab("Agenda de hoy", crearPestanaHoy());
         pestanas.addTab("Agenda por fecha", crearPestanaPorFecha());
         pestanas.addTab("Historico por rango", crearPestanaHistorico());
-        add(pestanas);
+        add(pestanas, BorderLayout.CENTER);
     }
 
     private JPanel crearPestanaHoy() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setBackground(EstiloUI.COLOR_FONDO);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
 
-        JButton boton = new JButton("Generar agenda de hoy");
+        JButton boton = EstiloUI.crearBotonPrimario("Generar agenda de hoy");
         boton.addActionListener(e -> onGenerarAgendaHoy());
 
         areaAgendaHoy = crearAreaTexto();
 
-        panel.add(boton, BorderLayout.NORTH);
-        panel.add(new JScrollPane(areaAgendaHoy), BorderLayout.CENTER);
+        JPanel contenedorBoton = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        contenedorBoton.setBackground(EstiloUI.COLOR_FONDO);
+        contenedorBoton.add(boton);
+
+        panel.add(contenedorBoton, BorderLayout.NORTH);
+        panel.add(envolverEnTarjeta(areaAgendaHoy), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel crearPestanaPorFecha() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setBackground(EstiloUI.COLOR_FONDO);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
 
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelSuperior.setBackground(EstiloUI.COLOR_FONDO);
         panelSuperior.add(new JLabel("Fecha (DD/MM/YYYY):"));
         campoFechaConsulta = new JTextField(10);
         panelSuperior.add(campoFechaConsulta);
-        JButton boton = new JButton("Consultar");
+        JButton boton = EstiloUI.crearBotonSecundario("Consultar");
         boton.addActionListener(e -> onConsultarPorFecha());
         panelSuperior.add(boton);
 
         areaAgendaFecha = crearAreaTexto();
 
         panel.add(panelSuperior, BorderLayout.NORTH);
-        panel.add(new JScrollPane(areaAgendaFecha), BorderLayout.CENTER);
+        panel.add(envolverEnTarjeta(areaAgendaFecha), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel crearPestanaHistorico() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setBackground(EstiloUI.COLOR_FONDO);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
 
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelSuperior.setBackground(EstiloUI.COLOR_FONDO);
         panelSuperior.add(new JLabel("Desde:"));
         campoFechaInicio = new JTextField(10);
         panelSuperior.add(campoFechaInicio);
         panelSuperior.add(new JLabel("Hasta:"));
         campoFechaFin = new JTextField(10);
         panelSuperior.add(campoFechaFin);
-        JButton boton = new JButton("Consultar");
+        JButton boton = EstiloUI.crearBotonSecundario("Consultar");
         boton.addActionListener(e -> onConsultarHistorico());
         panelSuperior.add(boton);
 
         areaHistorico = crearAreaTexto();
 
         panel.add(panelSuperior, BorderLayout.NORTH);
-        panel.add(new JScrollPane(areaHistorico), BorderLayout.CENTER);
+        panel.add(envolverEnTarjeta(areaHistorico), BorderLayout.CENTER);
         return panel;
     }
 
     private JTextArea crearAreaTexto() {
         JTextArea area = new JTextArea();
-        area.setEditable(false);
-        area.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        EstiloUI.estilizarAreaTexto(area);
         return area;
     }
 
-    // RF03 - Genera el cronograma del dia, igual que
-    // interfaz.VistaAgenda.mostrarAgendaDiaria().
+    private JScrollPane envolverEnTarjeta(JTextArea area) {
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setBorder(BorderFactory.createLineBorder(EstiloUI.COLOR_BORDE, 1));
+        return scroll;
+    }
+
+    // No recarga nada automaticamente al navegar: el usuario decide cuando
+    // generar/consultar, igual que en la version de consola.
+    public void refrescar() {
+        // Intencionalmente vacio.
+    }
+
     private void onGenerarAgendaHoy() {
         if (estudiante.getTareas().size() == 0) {
             areaAgendaHoy.setText("No tienes tareas registradas.");
@@ -146,7 +161,6 @@ public class VentanaAgenda extends JFrame {
         areaAgendaHoy.setText(texto);
     }
 
-    // Igual que interfaz.VistaAgenda.verAgendaPorFecha().
     private void onConsultarPorFecha() {
         String fecha = campoFechaConsulta.getText().trim();
         if (fecha.isEmpty()) {
@@ -158,7 +172,6 @@ public class VentanaAgenda extends JFrame {
         areaAgendaFecha.setText(texto);
     }
 
-    // Igual que interfaz.VistaAgenda.verHistoricoAgendas().
     private void onConsultarHistorico() {
         String inicio = campoFechaInicio.getText().trim();
         String fin = campoFechaFin.getText().trim();

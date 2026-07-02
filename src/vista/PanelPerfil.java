@@ -1,21 +1,22 @@
 package vista;
 
+import excepciones.ValidacionException;
 import modelo.Estudiante;
 import modelo.EventoFijo;
 import modelo.PerfilUsuario;
+import util.Validador;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
 /**
- * RF06 - Ventana de configuracion de perfil.
- * Reemplaza a interfaz.FormularioPerfil pero con componentes Swing en vez
- * de Scanner. Llama exactamente a los mismos metodos de modelo.PerfilUsuario
- * y modelo.EventoFijo que ya existen. No se modifica ninguna clase de
- * modelo ni de negocio.
+ * RF06 - Panel de configuracion de perfil (version dashboard de
+ * VentanaPerfil). Llama exactamente a los mismos metodos de
+ * modelo.PerfilUsuario y modelo.EventoFijo. No se modifica ninguna clase
+ * de modelo ni de negocio.
  */
-public class VentanaPerfil extends JFrame {
+public class PanelPerfil extends JPanel implements Refrescable {
 
     private Estudiante estudiante;
 
@@ -32,7 +33,7 @@ public class VentanaPerfil extends JFrame {
     private JSpinner spinnerHorasSuenoVariable;
 
     private JTextField campoNombreActividad;
-    private JTextField campoDiaActividad;
+    private JComboBox<String> comboDiaActividad;
     private JTextField campoHoraInicioActividad;
     private JTextField campoHoraFinActividad;
     private JSpinner spinnerDuracionActividad;
@@ -42,54 +43,63 @@ public class VentanaPerfil extends JFrame {
 
     private int contadorEventos;
 
-    public VentanaPerfil(Estudiante estudiante) {
+    public PanelPerfil(Estudiante estudiante) {
         this.estudiante = estudiante;
         this.contadorEventos = estudiante.getEventosFijos().size() + 1;
-        configurarVentana();
+        setLayout(new BorderLayout());
+        setBackground(EstiloUI.COLOR_FONDO);
+        setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         construirInterfaz();
-        cargarDatosExistentes();
-    }
-
-    private void configurarVentana() {
-        setTitle("Smart Planner - Perfil");
-        setSize(480, 560);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
     }
 
     private void construirInterfaz() {
-        JPanel panelPrincipal = new JPanel();
-        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
-        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        JPanel contenedor = new JPanel();
+        contenedor.setLayout(new BoxLayout(contenedor, BoxLayout.Y_AXIS));
+        contenedor.setBackground(EstiloUI.COLOR_FONDO);
 
-        panelPrincipal.add(crearPanelTipoHorario());
-        panelPrincipal.add(Box.createVerticalStrut(10));
-        panelPrincipal.add(crearPanelCamposHorario());
-        panelPrincipal.add(Box.createVerticalStrut(10));
+        JLabel titulo = EstiloUI.crearTitulo("Mi Perfil");
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contenedor.add(titulo);
+        contenedor.add(Box.createVerticalStrut(20));
 
-        JButton botonGuardar = new JButton("Guardar perfil");
-        botonGuardar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JPanel tarjetaHorario = EstiloUI.crearTarjeta();
+        tarjetaHorario.setLayout(new BoxLayout(tarjetaHorario, BoxLayout.Y_AXIS));
+        tarjetaHorario.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjetaHorario.setMaximumSize(new Dimension(Integer.MAX_VALUE, 260));
+
+        tarjetaHorario.add(crearPanelTipoHorario());
+        tarjetaHorario.add(Box.createVerticalStrut(10));
+        tarjetaHorario.add(crearPanelCamposHorario());
+        tarjetaHorario.add(Box.createVerticalStrut(14));
+
+        JButton botonGuardar = EstiloUI.crearBotonPrimario("Guardar perfil");
+        botonGuardar.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonGuardar.addActionListener(e -> onGuardarPerfil());
-        panelPrincipal.add(botonGuardar);
+        tarjetaHorario.add(botonGuardar);
 
-        panelPrincipal.add(Box.createVerticalStrut(20));
-        panelPrincipal.add(new JSeparator());
-        panelPrincipal.add(Box.createVerticalStrut(10));
+        contenedor.add(tarjetaHorario);
+        contenedor.add(Box.createVerticalStrut(20));
 
-        panelPrincipal.add(crearPanelActividadFija());
-        panelPrincipal.add(Box.createVerticalStrut(10));
-        panelPrincipal.add(crearPanelListaActividades());
+        JPanel tarjetaActividades = EstiloUI.crearTarjeta();
+        tarjetaActividades.setLayout(new BorderLayout(10, 10));
+        tarjetaActividades.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjetaActividades.add(crearPanelActividadFija(), BorderLayout.NORTH);
+        tarjetaActividades.add(crearPanelListaActividades(), BorderLayout.CENTER);
 
-        add(new JScrollPane(panelPrincipal));
+        contenedor.add(tarjetaActividades);
+
+        add(new JScrollPane(contenedor), BorderLayout.CENTER);
     }
 
     private JPanel crearPanelTipoHorario() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        panel.setBorder(BorderFactory.createTitledBorder("Tipo de horario"));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBackground(EstiloUI.COLOR_TARJETA);
 
-        radioFijo = new JRadioButton("Horario fijo", true);
-        radioVariable = new JRadioButton("Horario variable");
+        JLabel etiqueta = EstiloUI.crearSubtitulo("Tipo de horario:");
+        radioFijo = new JRadioButton("Fijo", true);
+        radioVariable = new JRadioButton("Variable");
+        radioFijo.setBackground(EstiloUI.COLOR_TARJETA);
+        radioVariable.setBackground(EstiloUI.COLOR_TARJETA);
 
         ButtonGroup grupo = new ButtonGroup();
         grupo.add(radioFijo);
@@ -98,6 +108,7 @@ public class VentanaPerfil extends JFrame {
         radioFijo.addActionListener(e -> cardLayoutHorario.show(panelHorario, "FIJO"));
         radioVariable.addActionListener(e -> cardLayoutHorario.show(panelHorario, "VARIABLE"));
 
+        panel.add(etiqueta);
         panel.add(radioFijo);
         panel.add(radioVariable);
         return panel;
@@ -106,6 +117,7 @@ public class VentanaPerfil extends JFrame {
     private JPanel crearPanelCamposHorario() {
         cardLayoutHorario = new CardLayout();
         panelHorario = new JPanel(cardLayoutHorario);
+        panelHorario.setBackground(EstiloUI.COLOR_TARJETA);
 
         panelHorario.add(crearPanelHorarioFijo(), "FIJO");
         panelHorario.add(crearPanelHorarioVariable(), "VARIABLE");
@@ -115,6 +127,7 @@ public class VentanaPerfil extends JFrame {
 
     private JPanel crearPanelHorarioFijo() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(EstiloUI.COLOR_TARJETA);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -142,11 +155,13 @@ public class VentanaPerfil extends JFrame {
 
     private JPanel crearPanelHorarioVariable() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(EstiloUI.COLOR_TARJETA);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel info = new JLabel("El horario del dia se pedira al generar la agenda.");
+        info.setForeground(EstiloUI.COLOR_TEXTO_SECUNDARIO);
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         panel.add(info, gbc);
 
@@ -162,44 +177,53 @@ public class VentanaPerfil extends JFrame {
 
     private JPanel crearPanelActividadFija() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Agregar actividad fija"));
+        panel.setBackground(EstiloUI.COLOR_TARJETA);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        panel.add(new JLabel("Nombre:"), gbc);
-        gbc.gridx = 1;
-        campoNombreActividad = new JTextField(12);
-        panel.add(campoNombreActividad, gbc);
+        JLabel titulo = EstiloUI.crearSubtitulo("Agregar actividad fija");
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 6;
+        panel.add(titulo, gbc);
+        gbc.gridwidth = 1;
 
         gbc.gridx = 0; gbc.gridy = 1;
-        panel.add(new JLabel("Dia (ej: LUNES):"), gbc);
+        panel.add(new JLabel("Nombre:"), gbc);
         gbc.gridx = 1;
-        campoDiaActividad = new JTextField(12);
-        panel.add(campoDiaActividad, gbc);
+        campoNombreActividad = new JTextField(10);
+        panel.add(campoNombreActividad, gbc);
+
+        gbc.gridx = 2; gbc.gridy = 1;
+        panel.add(new JLabel("Dia:"), gbc);
+        gbc.gridx = 3;
+        // JComboBox en vez de texto libre: elimina errores de tipeo o
+        // acentos que antes causaban que la actividad nunca coincidiera
+        // con el dia de la semana calculado por GestorAgenda, y por lo
+        // tanto nunca apareciera en la agenda diaria.
+        comboDiaActividad = new JComboBox<String>(Validador.getDiasValidos());
+        panel.add(comboDiaActividad, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
-        panel.add(new JLabel("Hora inicio (HH:mm):"), gbc);
+        panel.add(new JLabel("Hora inicio:"), gbc);
         gbc.gridx = 1;
-        campoHoraInicioActividad = new JTextField("18:00", 12);
+        campoHoraInicioActividad = new JTextField("18:00", 8);
         panel.add(campoHoraInicioActividad, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3;
-        panel.add(new JLabel("Hora fin (HH:mm):"), gbc);
-        gbc.gridx = 1;
-        campoHoraFinActividad = new JTextField("20:00", 12);
+        gbc.gridx = 2; gbc.gridy = 2;
+        panel.add(new JLabel("Hora fin:"), gbc);
+        gbc.gridx = 3;
+        campoHoraFinActividad = new JTextField("20:00", 8);
         panel.add(campoHoraFinActividad, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4;
-        panel.add(new JLabel("Duracion (horas):"), gbc);
-        gbc.gridx = 1;
+        gbc.gridx = 4; gbc.gridy = 2;
+        panel.add(new JLabel("Duracion (h):"), gbc);
+        gbc.gridx = 5;
         spinnerDuracionActividad = new JSpinner(new SpinnerNumberModel(2, 1, 24, 1));
         panel.add(spinnerDuracionActividad, gbc);
 
-        JButton botonAgregar = new JButton("Agregar actividad");
+        JButton botonAgregar = EstiloUI.crearBotonSecundario("Agregar actividad");
         botonAgregar.addActionListener(e -> onAgregarActividad());
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         panel.add(botonAgregar, gbc);
 
         return panel;
@@ -207,17 +231,27 @@ public class VentanaPerfil extends JFrame {
 
     private JPanel crearPanelListaActividades() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Actividades fijas registradas"));
+        panel.setBackground(EstiloUI.COLOR_TARJETA);
+
+        JLabel titulo = EstiloUI.crearSubtitulo("Actividades fijas registradas");
+        panel.add(titulo, BorderLayout.NORTH);
 
         modeloListaActividades = new DefaultListModel<String>();
         listaActividades = new JList<String>(modeloListaActividades);
         listaActividades.setVisibleRowCount(5);
+        listaActividades.setFont(EstiloUI.FUENTE_NORMAL);
 
-        panel.add(new JScrollPane(listaActividades), BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(listaActividades);
+        scroll.setPreferredSize(new Dimension(0, 140));
+        panel.add(scroll, BorderLayout.CENTER);
         return panel;
     }
 
-    private void cargarDatosExistentes() {
+    // Recarga los datos del perfil y las actividades cada vez que el
+    // usuario navega a esta seccion del dashboard.
+    public void refrescar() {
+        modeloListaActividades.clear();
+
         PerfilUsuario perfil = estudiante.getPerfil();
         if (perfil != null) {
             if (perfil.isTieneHorarioFijo()) {
@@ -252,9 +286,13 @@ public class VentanaPerfil extends JFrame {
             String horaLimite = campoHoraLimite.getText().trim();
             int horasSueno = (Integer) spinnerHorasSuenoFijo.getValue();
 
-            if (horaInicio.isEmpty() || horaLimite.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Completa hora de inicio y hora limite.",
-                        "Datos incompletos", JOptionPane.WARNING_MESSAGE);
+            try {
+                Validador.validarHora(horaInicio, "Hora de inicio");
+                Validador.validarHora(horaLimite, "Hora limite de sueno");
+                Validador.validarHorasSueno(horasSueno);
+            } catch (ValidacionException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(),
+                        "Datos invalidos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -267,6 +305,14 @@ public class VentanaPerfil extends JFrame {
             }
         } else {
             int horasSueno = (Integer) spinnerHorasSuenoVariable.getValue();
+
+            try {
+                Validador.validarHorasSueno(horasSueno);
+            } catch (ValidacionException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(),
+                        "Datos invalidos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             if (estudiante.getPerfil() != null) {
                 perfil = estudiante.getPerfil();
@@ -283,14 +329,20 @@ public class VentanaPerfil extends JFrame {
 
     private void onAgregarActividad() {
         String nombre = campoNombreActividad.getText().trim();
-        String dia = campoDiaActividad.getText().trim().toUpperCase();
+        String dia = (String) comboDiaActividad.getSelectedItem();
         String horaInicio = campoHoraInicioActividad.getText().trim();
         String horaFin = campoHoraFinActividad.getText().trim();
         int duracion = (Integer) spinnerDuracionActividad.getValue();
 
-        if (nombre.isEmpty() || dia.isEmpty() || horaInicio.isEmpty() || horaFin.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa todos los campos de la actividad.",
-                    "Datos incompletos", JOptionPane.WARNING_MESSAGE);
+        try {
+            Validador.validarTextoNoVacio(nombre, "Nombre de la actividad");
+            Validador.validarDiaSemana(dia);
+            Validador.validarHora(horaInicio, "Hora de inicio");
+            Validador.validarHora(horaFin, "Hora de fin");
+            Validador.validarDuracionHoras(duracion);
+        } catch (ValidacionException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -308,6 +360,5 @@ public class VentanaPerfil extends JFrame {
         modeloListaActividades.addElement(evento.toString());
 
         campoNombreActividad.setText("");
-        campoDiaActividad.setText("");
     }
 }

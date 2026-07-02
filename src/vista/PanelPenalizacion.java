@@ -1,22 +1,23 @@
 package vista;
 
+import excepciones.ValidacionException;
 import modelo.AgendaDiaria;
 import modelo.Estudiante;
 import modelo.Penalizacion;
 import negocio.GestorAgenda;
+import util.Validador;
 
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 
 /**
- * RF04 - Ventana de registro de penalizacion.
- * Reemplaza interfaz.VistaAgenda.registrarPenalizacion(). Llama
- * exactamente a los mismos metodos de modelo.Penalizacion y
- * negocio.GestorAgenda que ya existen. No se modifica ninguna clase de
- * modelo ni de negocio.
+ * RF04 - Panel de registro de penalizacion (version dashboard de
+ * VentanaPenalizacion). Llama exactamente a los mismos metodos de
+ * modelo.Penalizacion y negocio.GestorAgenda. No se modifica ninguna
+ * clase de modelo ni de negocio.
  */
-public class VentanaPenalizacion extends JFrame {
+public class PanelPenalizacion extends JPanel implements Refrescable {
 
     private Estudiante estudiante;
     private GestorAgenda gestorAgenda;
@@ -25,68 +26,72 @@ public class VentanaPenalizacion extends JFrame {
     private JSpinner spinnerMinutos;
     private JTextArea areaResultado;
 
-    public VentanaPenalizacion(Estudiante estudiante) {
+    public PanelPenalizacion(Estudiante estudiante) {
         this.estudiante = estudiante;
         this.gestorAgenda = new GestorAgenda();
-        configurarVentana();
+        setLayout(new BorderLayout(0, 16));
+        setBackground(EstiloUI.COLOR_FONDO);
+        setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         construirInterfaz();
     }
 
-    private void configurarVentana() {
-        setTitle("Smart Planner - Registrar penalizacion");
-        setSize(500, 450);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-    }
-
     private void construirInterfaz() {
-        JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
-        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        add(EstiloUI.crearTitulo("Registrar Penalizacion"), BorderLayout.NORTH);
 
-        JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBorder(BorderFactory.createTitledBorder("Registrar penalizacion"));
+        JPanel centro = new JPanel(new BorderLayout(0, 16));
+        centro.setBackground(EstiloUI.COLOR_FONDO);
+
+        JPanel tarjetaFormulario = EstiloUI.crearTarjeta();
+        tarjetaFormulario.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         gbc.gridx = 0; gbc.gridy = 0;
-        panelFormulario.add(new JLabel("Motivo de la distraccion:"), gbc);
+        tarjetaFormulario.add(new JLabel("Motivo de la distraccion:"), gbc);
         gbc.gridx = 1;
         campoMotivo = new JTextField(18);
-        panelFormulario.add(campoMotivo, gbc);
+        tarjetaFormulario.add(campoMotivo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1;
-        panelFormulario.add(new JLabel("Minutos perdidos:"), gbc);
+        tarjetaFormulario.add(new JLabel("Minutos perdidos:"), gbc);
         gbc.gridx = 1;
         spinnerMinutos = new JSpinner(new SpinnerNumberModel(15, 1, 1440, 1));
-        panelFormulario.add(spinnerMinutos, gbc);
+        tarjetaFormulario.add(spinnerMinutos, gbc);
 
-        JButton botonRegistrar = new JButton("Registrar");
+        JButton botonRegistrar = EstiloUI.crearBotonPrimario("Registrar");
         botonRegistrar.addActionListener(e -> onRegistrarPenalizacion());
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        panelFormulario.add(botonRegistrar, gbc);
+        tarjetaFormulario.add(botonRegistrar, gbc);
 
         areaResultado = new JTextArea();
-        areaResultado.setEditable(false);
-        areaResultado.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        EstiloUI.estilizarAreaTexto(areaResultado);
         areaResultado.setLineWrap(true);
         areaResultado.setWrapStyleWord(true);
 
-        panelPrincipal.add(panelFormulario, BorderLayout.NORTH);
-        panelPrincipal.add(new JScrollPane(areaResultado), BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(areaResultado);
+        scroll.setBorder(BorderFactory.createLineBorder(EstiloUI.COLOR_BORDE, 1));
 
-        add(panelPrincipal);
+        centro.add(tarjetaFormulario, BorderLayout.NORTH);
+        centro.add(scroll, BorderLayout.CENTER);
+
+        add(centro, BorderLayout.CENTER);
     }
 
-    // RF04 - Registra la penalizacion y recalcula la agenda, exactamente
-    // igual que interfaz.VistaAgenda.registrarPenalizacion().
+    public void refrescar() {
+        // Intencionalmente vacio: es un formulario de accion, no de lectura.
+    }
+
     private void onRegistrarPenalizacion() {
         String motivo = campoMotivo.getText().trim();
         int minutos = (Integer) spinnerMinutos.getValue();
 
-        if (motivo.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingresa el motivo de la distraccion.",
-                    "Dato requerido", JOptionPane.WARNING_MESSAGE);
+        try {
+            Validador.validarTextoNoVacio(motivo, "Motivo");
+            Validador.validarMinutosPerdidos(minutos);
+        } catch (ValidacionException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
